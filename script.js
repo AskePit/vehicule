@@ -123,7 +123,7 @@ function addCar() {
 }
 
 function addTerrain() {
-    const geometry = new THREE.PlaneGeometry(20, 100)
+    const geometry = new THREE.PlaneGeometry(20, 50)
     const material = new THREE.MeshPhongMaterial({ 
         color: 0x0000ff,
         side: THREE.DoubleSide,
