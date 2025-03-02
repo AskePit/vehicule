@@ -168,71 +168,78 @@ const positions = [
     CameraPreset.LEFT_SIDE,
 ]
 let currentIndex = 0
+let interpolationTimeCurr = 0
 let interpolationTime = 0
 let forward = true
 
-function animate() {
-    requestAnimationFrame(animate)
-    
-    time += 1/60 // Assuming 60fps
-    if (time >= interpolationTime) {
-        time = 0
-        // Update indices for next interpolation
-        if (forward) {
-            currentIndex++
-            if (currentIndex >= positions.length - 1) forward = false
-        } else {
-            currentIndex--
-            if (currentIndex <= 0) forward = true
+let lastTime = 0
+
+function renderLoop(allTime) {
+    const deltaTime = (allTime - lastTime) / 1000
+    lastTime = allTime
+    animate(deltaTime)
+
+    function animate(dt) {
+        interpolationTimeCurr += dt
+
+        if (interpolationTimeCurr >= interpolationTime) {
+            interpolationTimeCurr = 0
+            // Update indices for next interpolation
+            if (forward) {
+                currentIndex++
+                if (currentIndex >= positions.length - 1) forward = false
+            } else {
+                currentIndex--
+                if (currentIndex <= 0) forward = true
+            }
         }
-    }
 
-    const startPreset = positions[currentIndex]
-    const endPreset = positions[forward ? currentIndex + 1 : currentIndex - 1]
+        const startPreset = positions[currentIndex]
+        const endPreset = positions[forward ? currentIndex + 1 : currentIndex - 1]
 
-    interpolationTime = getInterpolationTime(startPreset, endPreset)
-    const progress = time / interpolationTime
-    
-    const pos1 = getCameraPreset(startPreset)
-    const pos2 = getCameraPreset(endPreset)
-    
-    // Extract position and quaternion from matrices
-    const startPos = new THREE.Vector3()
-    const startQuat = new THREE.Quaternion()
-    const startScale = new THREE.Vector3()
-    pos1.decompose(startPos, startQuat, startScale)
-    
-    const endPos = new THREE.Vector3()
-    const endQuat = new THREE.Quaternion()
-    const endScale = new THREE.Vector3()
-    pos2.decompose(endPos, endQuat, endScale)
-    
-    // Interpolate position and rotation
-    const currentPos = new THREE.Vector3()
-    currentPos.lerpVectors(startPos, endPos, progress)
-    
-    const currentQuat = new THREE.Quaternion()
-    currentQuat.slerpQuaternions(startQuat, endQuat, progress)
-    
-    // Apply interpolated transform to camera
-    camera.position.copy(currentPos)
-    camera.quaternion.copy(currentQuat)
-    
-    // Rotate wheels and axes
-    for (wheel of wheels) {
-        wheel.rotateY(0.01)
+        interpolationTime = getInterpolationTime(startPreset, endPreset)
+        const progress = interpolationTimeCurr / interpolationTime
+        
+        const pos1 = getCameraPreset(startPreset)
+        const pos2 = getCameraPreset(endPreset)
+        
+        // Extract position and quaternion from matrices
+        const startPos = new THREE.Vector3()
+        const startQuat = new THREE.Quaternion()
+        const startScale = new THREE.Vector3()
+        pos1.decompose(startPos, startQuat, startScale)
+        
+        const endPos = new THREE.Vector3()
+        const endQuat = new THREE.Quaternion()
+        const endScale = new THREE.Vector3()
+        pos2.decompose(endPos, endQuat, endScale)
+        
+        // Interpolate position and rotation
+        const currentPos = new THREE.Vector3()
+        currentPos.lerpVectors(startPos, endPos, progress)
+        
+        const currentQuat = new THREE.Quaternion()
+        currentQuat.slerpQuaternions(startQuat, endQuat, progress)
+        
+        // Apply interpolated transform to camera
+        camera.position.copy(currentPos)
+        camera.quaternion.copy(currentQuat)
+        
+        // Rotate wheels and axes
+        for (wheel of wheels) {
+            wheel.rotateY(0.01)
+        }
+        for (axis of axises) {
+            axis.rotateY(0.01)
+        }
+        
+        renderer.render(scene, camera)
     }
-    for (axis of axises) {
-        axis.rotateY(0.01)
-    }
-    
-    renderer.render(scene, camera)
 }
+renderer.setAnimationLoop(renderLoop)
 
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight
     camera.updateProjectionMatrix()
     renderer.setSize(window.innerWidth - 50, window.innerHeight - 50)
 })
-
-animate()
