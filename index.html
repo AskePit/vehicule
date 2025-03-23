@@ -4,10 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Canvas with Three.js</title>
+    <link rel="stylesheet" href="styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
+    <div class="controls">
+        <div class="stats-header">Throttle:</div><div class="stats-row"><input type="range" id="throttle-val" min="0" max="1" step="0.01" value="0.5"></div>
+        <div class="stats-header">Clutch:</div><div class="stats-row"><input type="range" id="clutch-val" min="0" max="1" step="0.01" value="0.5"></div>
+        <div class="stats-header">Gear:</div><div class="stats-row"><input type="range" id="gear-val" min="1" max="6" step="1" value="1"></div>
+    </div>
+    <div class="stats">
+        <div class="stats-header">Engine RPM:</div><div class="stats-row"><div id="engine-rpm-val" class="stats-value">1000</div><div class="stats-unit">RPM</div></div>
+        <div class="stats-header">Engine Torque:</div><div class="stats-row"><div id="engine-torque-val" class="stats-value">400</div><div class="stats-unit">Nm</div></div>
+        <div class="stats-header">Transmission Torque:</div><div class="stats-row"><div id="transmission-torque-val" class="stats-value">400</div><div class="stats-unit">Nm</div></div>
+        <div class="stats-header">L Wheel Torque:</div><div class="stats-row"><div id="l-wheel-torque-val" class="stats-value">200</div><div class="stats-unit">Nm</div></div>
+        <div class="stats-header">R Wheel Torque:</div><div class="stats-row"><div id="r-wheel-torque-val" class="stats-value">200</div><div class="stats-unit">Nm</div></div>
+        <div class="stats-header">L Wheel Angular Velocity:</div><div class="stats-row"><div id="l-wheel-ang-velocity-val" class="stats-value">50</div><div class="stats-unit">rad/sec</div></div>
+        <div class="stats-header">R Wheel Angular Velocity:</div><div class="stats-row"><div id="r-wheel-ang-velocity-val" class="stats-value">50</div><div class="stats-unit">rad/sec</div></div>
+        <div class="stats-header">L Wheel &nbsp;Linear Velocity:</div><div class="stats-row"><div id="l-wheel-lin-velocity-val" class="stats-value">50</div><div class="stats-unit">m/sec</div></div>
+        <div class="stats-header">R Wheel &nbsp;Linear Velocity:</div><div class="stats-row"><div id="r-wheel-lin-velocity-val" class="stats-value">50</div><div class="stats-unit">m/sec</div></div>
+        <div class="stats-header">Vehicle Speed:</div><div class="stats-row"><div id="vehicle-speed-val" class="stats-value">50</div><div class="stats-unit">km/h</div></div>
+    </div>
     <script src="simulation.js" type="module"></script>
-    <script src="scene.js"></script>
+    <script src="scene.js" type="module"></script>
 </body>
 </html>

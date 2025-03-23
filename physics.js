@@ -9,3 +9,11 @@ export function angularVelocityToRpm(angularVelocity) {
 export function wheelMomentOfInertia(radius, mass) {
     return 0.5 * mass * radius ** 2
 }
+
+export function msTokmh(ms) {
+    return ms * 3600 / 1000
+}
+
+export function clamp(value, min, max) {
+    return Math.max(min, Math.min(value, max));
+}

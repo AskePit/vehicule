@@ -1,3 +1,33 @@
+import { vehicle } from './simulation.js'
+
+const engineRpmEl = document.getElementById("engine-rpm-val")
+const engineTorqueEl = document.getElementById("engine-torque-val")
+const throttleEl = document.getElementById("throttle-val")
+const clutchEl = document.getElementById("clutch-val")
+const gearEl = document.getElementById("gear-val")
+const transmissionTorqueEl = document.getElementById("transmission-torque-val")
+const lWheelTorqueEl = document.getElementById("l-wheel-torque-val")
+const rWheelTorqueEl = document.getElementById("r-wheel-torque-val")
+const lWheelAngVelocityEl = document.getElementById("l-wheel-ang-velocity-val")
+const rWheelAngVelocityEl = document.getElementById("r-wheel-ang-velocity-val")
+const lWheelLinVelocityEl = document.getElementById("l-wheel-lin-velocity-val")
+const rWheelLinVelocityEl = document.getElementById("r-wheel-lin-velocity-val")
+const vehicleSpeedEl = document.getElementById("vehicle-speed-val")
+
+throttleEl.value = vehicle.engine.throttle
+clutchEl.value = vehicle.engine.clutch
+gearEl.value = vehicle.transmission.currentGear
+
+throttleEl.addEventListener("input", () => {
+    vehicle.engine.throttle = throttleEl.value
+})
+clutchEl.addEventListener("input", () => {
+    vehicle.engine.clutch = clutchEl.value
+})
+gearEl.addEventListener("input", () => {
+    vehicle.transmission.currentGear = gearEl.value
+})
+
 const scene = new THREE.Scene()
 
 const CameraPreset = {
@@ -226,14 +256,25 @@ function renderLoop(allTime) {
         camera.quaternion.copy(currentQuat)
         
         // Rotate wheels and axes
-        for (wheel of wheels) {
+        for (let wheel of wheels) {
             wheel.rotateY(0.01)
         }
-        for (axis of axises) {
+        for (let axis of axises) {
             axis.rotateY(0.01)
         }
         
         renderer.render(scene, camera)
+
+        engineRpmEl.innerHTML = vehicle.engine.currentRpm.toFixed(0)
+        engineTorqueEl.innerHTML = vehicle.engine.getProducedTorque().toFixed(1)
+        transmissionTorqueEl.innerHTML = vehicle.transmission.currentTorque.toFixed(1)
+        lWheelTorqueEl.innerHTML = vehicle.getLeftDriveWheel().inTorque.toFixed(1)
+        rWheelTorqueEl.innerHTML = vehicle.getRightDriveWheel().inTorque.toFixed(1)
+        lWheelAngVelocityEl.innerHTML = vehicle.getLeftDriveWheel().angularVelocity.toFixed(1)
+        rWheelAngVelocityEl.innerHTML = vehicle.getRightDriveWheel().angularVelocity.toFixed(1)
+        lWheelLinVelocityEl.innerHTML = vehicle.getLeftDriveWheel().getLinearVelocity().toFixed(1)
+        rWheelLinVelocityEl.innerHTML = vehicle.getRightDriveWheel().getLinearVelocity().toFixed(1)
+        vehicleSpeedEl.innerHTML = vehicle.getKmh().toFixed(0)
     }
 }
 renderer.setAnimationLoop(renderLoop)

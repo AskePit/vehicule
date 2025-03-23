@@ -1,0 +1,35 @@
+.stats, .controls {
+    position: absolute;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: auto; /* Creates an empty row in the middle */
+    column-gap: 20px;
+
+    color: white;
+    font-family: monospace;
+    font-size: 11px;
+}
+
+.controls {
+    top: 10px;
+}
+
+.stats {
+    top: 85px;
+}
+
+.stats-col {
+    display: flex;
+    flex-direction: column;
+    padding-right: 10px;
+}
+
+.stats-row {
+    display: flex;
+    flex-direction: row;
+    padding-right: 10px;
+}
+
+.stats-value {
+    padding-right: 1ex;
+}

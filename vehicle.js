@@ -1,4 +1,4 @@
-import { rpmToAngularVelocity, angularVelocityToRpm, wheelMomentOfInertia } from './physics.js'
+import { rpmToAngularVelocity, angularVelocityToRpm, wheelMomentOfInertia, msTokmh, clamp } from './physics.js'
 
 export class Engine {
     maxTorque
@@ -35,10 +35,10 @@ export class Engine {
     }
 
     matchRpm(targetVelocity) {
-        const currentVelocity = rpmToAngularVelocity(this.currentRpm);
+        const currentVelocity = rpmToAngularVelocity(this.currentRpm)
         const matchedVelocity = currentVelocity * (1 - this.clutch) + targetVelocity * this.clutch
 
-        this.currentRpm = Math.max(angularVelocityToRpm(matchedVelocity), this.minRpm)
+        this.currentRpm = clamp(angularVelocityToRpm(matchedVelocity), this.minRpm, this.maxRpm)
     }
 
     update(dt) {
@@ -49,6 +49,7 @@ export class Engine {
 export class Transmission {
     gearRatios
     currentGear
+    currentTorque
 
     constructor() {
         this.gearRatios = [0, 3.6, 2.1, 1.4, 1.0, 0.8, 0.6]
@@ -56,7 +57,8 @@ export class Transmission {
     }
 
     getOutputTorque(engineTorque) {
-        return engineTorque * this.gearRatios[this.currentGear]
+        this.currentTorque = engineTorque * this.gearRatios[this.currentGear]
+        return this.currentTorque
     }
 
     shiftGear(gear) {
@@ -112,6 +114,9 @@ export class Wheel {
     }
 }
 
+const LEFT = 0
+const RIGHT = 0
+
 export class Vehicle {
     engine
     transmission
@@ -132,16 +137,29 @@ export class Vehicle {
         const producedTorque = this.engine.getProducedTorque()
 
         // match rpm: from wheels to engine
-        const diffVelocity = this.differential.getAngularVelocity(this.driveWheels[0].angularVelocity, this.driveWheels[1].angularVelocity)
+        const diffVelocity = this.differential.getAngularVelocity(this.getLeftDriveWheel().angularVelocity, this.getRightDriveWheel().angularVelocity)
         const transmissionVelocity = this.transmission.getAngularVelocity(diffVelocity)
         this.engine.matchRpm(transmissionVelocity)
 
         // apply new torque: from engine to wheels
         const transmissionTorque = this.transmission.getOutputTorque(producedTorque)
         const [lWheelVelocity, rWheelVelocity] = this.differential.getOutputTorque(transmissionTorque)
-        this.driveWheels[0].setTorque(lWheelVelocity)
-        this.driveWheels[1].setTorque(rWheelVelocity)
-        this.driveWheels[0].update(dt)
-        this.driveWheels[1].update(dt)
+        this.getLeftDriveWheel().setTorque(lWheelVelocity)
+        this.getRightDriveWheel().setTorque(rWheelVelocity)
+        this.getLeftDriveWheel().update(dt)
+        this.getRightDriveWheel().update(dt)
+    }
+
+    getLeftDriveWheel() {
+        return this.driveWheels[LEFT]
+    }
+
+    getRightDriveWheel() {
+        return this.driveWheels[RIGHT]
+    }
+
+    getKmh() {
+        const ms = (this.getLeftDriveWheel().getLinearVelocity() + this.getRightDriveWheel().getLinearVelocity()) / 2
+        return msTokmh(ms)
     }
 }
