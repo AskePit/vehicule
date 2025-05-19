@@ -85,14 +85,16 @@ export class Differential {
 export class Wheel {
     radius
     mass
+    resistanceFactor
 
     angularVelocity
     inTorque
 
-    constructor(radius, mass) {
+    constructor(radius, mass, resistanceFactor = 0.5) {
         this.radius = radius
         this.angularVelocity = 0
         this.mass = mass
+        this.resistanceFactor = resistanceFactor
     }
 
     setTorque(inTorque) {
@@ -105,7 +107,13 @@ export class Wheel {
 
     #applyTorque(dt) {
         const I = wheelMomentOfInertia(this.radius, this.mass)
-        const angularAcceleration = this.inTorque / I
+
+        const linearVelocity = this.getLinearVelocity()
+        const resistanceTorque = -this.resistanceFactor * linearVelocity ** 2 * this.radius * Math.sign(linearVelocity)
+
+        const netTorque = this.inTorque + resistanceTorque
+
+        const angularAcceleration = netTorque / I
         this.angularVelocity += angularAcceleration * dt
     }
 
