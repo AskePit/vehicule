@@ -255,12 +255,14 @@ function renderLoop(allTime) {
         camera.position.copy(currentPos)
         camera.quaternion.copy(currentQuat)
         
+        const wheelsVelocity = vehicle.getLeftDriveWheel().angularVelocity
+
         // Rotate wheels and axes
         for (let wheel of wheels) {
-            wheel.rotateY(0.01)
+            wheel.rotateY(wheelsVelocity * dt)
         }
         for (let axis of axises) {
-            axis.rotateY(0.01)
+            axis.rotateY(wheelsVelocity * dt)
         }
         
         renderer.render(scene, camera)

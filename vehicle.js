@@ -19,9 +19,13 @@ export class Engine {
     }
 
     #getTorqueFactor() {
-        const peakRpm = 4000  // Where max torque happens
-        const spread = 4000   // How wide the peak is
-    
+        const peakRpm = 2000  // Where max torque happens
+        let spread = 3000   // How wide the peak is
+
+        if (this.currentRpm < peakRpm) {
+            spread /= 2.0
+        }
+
         let factor = 1.0 - Math.pow((this.currentRpm - peakRpm) / spread, 2)
         return Math.max(0, factor)  // Ensure non-negative values
     }
@@ -50,14 +54,24 @@ export class Transmission {
     gearRatios
     currentGear
     currentTorque
+    transmissionEfficiency
 
     constructor() {
         this.gearRatios = [0, 3.6, 2.1, 1.4, 1.0, 0.8, 0.6]
         this.currentGear = 1
+        this.transmissionEfficiency = 0.9 // 90% efficiency = 10% loss
+    }
+
+    getCurrentGear() {
+        return this.currentGear
+    }
+
+    getCurrentRatio() {
+        return this.gearRatios[this.currentGear]
     }
 
     getOutputTorque(engineTorque) {
-        this.currentTorque = engineTorque * this.gearRatios[this.currentGear]
+        this.currentTorque = engineTorque * this.gearRatios[this.currentGear] * this.transmissionEfficiency
         return this.currentTorque
     }
 
@@ -68,37 +82,56 @@ export class Transmission {
     }
 
     getAngularVelocity(differentialVelocity) {
-        return differentialVelocity / this.gearRatios[this.currentGear]
+        return differentialVelocity * this.gearRatios[this.currentGear]
     }
 }
 
 export class Differential {
+    finalDriveRatio
+    diffEfficiency
+
+    constructor() {
+        this.finalDriveRatio = 4.0
+        this.diffEfficiency = 0.97 // 97% efficiency = 3% loss
+    }
+
     getOutputTorque(inTorque) {
-        return [inTorque/2, inTorque/2]
+        const diffTorque = inTorque * this.diffEfficiency * this.finalDriveRatio / 2  // Split torque between left and right wheels
+        return [diffTorque, diffTorque]
     }
 
     getAngularVelocity(lWheelVelocity, rWheelVelocity) {
-        return (lWheelVelocity + rWheelVelocity) / 2
+        return (lWheelVelocity + rWheelVelocity) / 2 * this.finalDriveRatio
     }
 }
 
 export class Wheel {
     radius
     mass
-    resistanceFactor
+    airDragCoeff
+    rollingResistanceCoeff
 
     angularVelocity
+    maxAngularVelocity
     inTorque
 
-    constructor(radius, mass, resistanceFactor = 0.5) {
+    constructor(radius, mass, airDragCoeff = 0.3, rollingResistanceCoeff = 30) {
         this.radius = radius
         this.angularVelocity = 0
         this.mass = mass
-        this.resistanceFactor = resistanceFactor
+        this.airDragCoeff = airDragCoeff
+        this.rollingResistanceCoeff = rollingResistanceCoeff
     }
 
     setTorque(inTorque) {
         this.inTorque = inTorque
+        // if (this.angularVelocity > this.maxAngularVelocity) {
+        //     this.inTorque = Math.min(0, this.inTorque)
+        // }
+    }
+
+    setMaxAngularVelocity(maxVelocity) {
+        this.maxAngularVelocity = maxVelocity
     }
 
     update(dt) {
@@ -106,14 +139,23 @@ export class Wheel {
     }
 
     #applyTorque(dt) {
-        const I = wheelMomentOfInertia(this.radius, this.mass)
+        //const I = wheelMomentOfInertia(this.radius, this.mass)
 
-        const linearVelocity = this.getLinearVelocity()
-        const resistanceTorque = -this.resistanceFactor * linearVelocity ** 2 * this.radius * Math.sign(linearVelocity)
+        const v = this.getLinearVelocity()
+        const sign = Math.sign(v)
 
+        // Drag and rolling resistance approximated as torque
+        const dragTorque = -this.airDragCoeff * v ** 2 * this.radius * sign
+        const rollingTorque = -this.rollingResistanceCoeff * v * this.radius * sign
+
+        const resistanceTorque = dragTorque + rollingTorque
         const netTorque = this.inTorque + resistanceTorque
+        const driveForce = netTorque / this.radius
+        let acceleration = driveForce / 700 // Assuming a constant mass of 700 kg for the wheel
 
-        const angularAcceleration = netTorque / I
+        // console.log(`inTorque: ${this.inTorque}\ndragTorque: ${dragTorque}\nrollingTorque: ${rollingTorque}\nnetTorque: ${netTorque}\ndriveForce: ${driveForce}\nacceleration: ${acceleration}`)
+
+        const angularAcceleration = acceleration / this.radius
         this.angularVelocity += angularAcceleration * dt
     }
 
@@ -132,30 +174,46 @@ export class Vehicle {
     driveWheels
     passiveWheels
 
+    mass
+    velocity  // m/s
+    dragCoefficient
+    rollingResistanceCoefficient
+
     constructor() {
-        this.engine = new Engine(340, 1000, 4500)
+        this.engine = new Engine(340, 1000, 4500) // maxTorque, minRpm, maxRpm
         this.transmission = new Transmission()
         this.differential = new Differential()
         this.driveWheels = [new Wheel(0.23, 25), new Wheel(0.23, 25)]
         this.passiveWheels = [new Wheel(0.23, 25), new Wheel(0.23, 25)]
+
+        this.mass = 1200  // kg
+        //this.velocity = 0  // m/s
     }
 
     update(dt) {
-        // get new torque from engine
         const producedTorque = this.engine.getProducedTorque()
-
-        // match rpm: from wheels to engine
-        const diffVelocity = this.differential.getAngularVelocity(this.getLeftDriveWheel().angularVelocity, this.getRightDriveWheel().angularVelocity)
-        const transmissionVelocity = this.transmission.getAngularVelocity(diffVelocity)
-        this.engine.matchRpm(transmissionVelocity)
-
-        // apply new torque: from engine to wheels
         const transmissionTorque = this.transmission.getOutputTorque(producedTorque)
-        const [lWheelVelocity, rWheelVelocity] = this.differential.getOutputTorque(transmissionTorque)
-        this.getLeftDriveWheel().setTorque(lWheelVelocity)
-        this.getRightDriveWheel().setTorque(rWheelVelocity)
-        this.getLeftDriveWheel().update(dt)
-        this.getRightDriveWheel().update(dt)
+
+        const [leftTorque, rightTorque] = this.differential.getOutputTorque(transmissionTorque)
+        const totalRatio = this.getTotalRatio()
+        const maxWheelAngularVelocity = rpmToAngularVelocity(this.engine.maxRpm / totalRatio) 
+
+        const leftWheel = this.getLeftDriveWheel()
+        const rightWheel = this.getRightDriveWheel()
+        leftWheel.setMaxAngularVelocity(maxWheelAngularVelocity)
+        rightWheel.setMaxAngularVelocity(maxWheelAngularVelocity)
+        leftWheel.setTorque(leftTorque)
+        rightWheel.setTorque(rightTorque)
+
+        leftWheel.update(dt)
+        rightWheel.update(dt)
+
+        const avgWheelAngularVelocity = (leftWheel.angularVelocity + rightWheel.angularVelocity) / 2
+        //this.velocity = avgWheelAngularVelocity * leftWheel.radius
+
+        const diffAngularVelocity = avgWheelAngularVelocity
+        const transmissionAngularVelocity = this.transmission.getAngularVelocity(diffAngularVelocity)
+        this.engine.matchRpm(transmissionAngularVelocity)
     }
 
     getLeftDriveWheel() {
@@ -169,5 +227,9 @@ export class Vehicle {
     getKmh() {
         const ms = (this.getLeftDriveWheel().getLinearVelocity() + this.getRightDriveWheel().getLinearVelocity()) / 2
         return msTokmh(ms)
+    }
+
+    getTotalRatio() {
+        return this.transmission.getCurrentRatio() * this.differential.finalDriveRatio
     }
 }

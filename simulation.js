@@ -3,7 +3,7 @@ import { Vehicle } from './vehicle.js'
 let running = true
 
 export const vehicle = new Vehicle()
-vehicle.transmission.shiftGear(3)
+vehicle.transmission.shiftGear(1)
 vehicle.engine.throttle = 0.5
 vehicle.engine.clutch = 1.0
 
@@ -24,7 +24,7 @@ function mainLoop() {
 mainLoop()
 
 // Stop the loop after 10 seconds
-setTimeout(() => {
-    running = false
-    console.log("Simulation stopped")
-}, 100000)
+// setTimeout(() => {
+//     running = false
+//     console.log("Simulation stopped")
+// }, 100000)
