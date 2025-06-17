@@ -4,7 +4,7 @@ let running = true
 
 export const vehicle = new Vehicle()
 vehicle.transmission.shiftGear(1)
-vehicle.engine.throttle = 0.5
+vehicle.engine.throttle = 0.0
 vehicle.engine.clutch = 1.0
 
 function update(dt) {

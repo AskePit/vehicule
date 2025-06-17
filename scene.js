@@ -122,7 +122,7 @@ function addBase(axisFront, axisBack, width = 1.5, thickness = 0.1) {
 
     // Create box geometry for the base
     const geometry = new THREE.BoxGeometry(width, thickness, length)
-    const material = new THREE.MeshBasicMaterial({ color: 0x95a5a6, wireframe: true })
+    const material = new THREE.MeshBasicMaterial({ color: 0x95a5a6, wireframe: false })
     const base = new THREE.Mesh(geometry, material)
 
     // Position base at midpoint between axises
@@ -161,7 +161,7 @@ function createChessboardTexture(size = 256, squares = 2) {
     const squareSize = size / squares
     for (let y = 0; y < squares; y++) {
         for (let x = 0; x < squares; x++) {
-            ctx.fillStyle = (x + y) % 2 === 0 ? '#ffffff' : '#000000'
+            ctx.fillStyle = y % 2 === 0 ? '#0000ff' : '#ff00ff'
             ctx.fillRect(x * squareSize, y * squareSize, squareSize, squareSize)
         }
     }
@@ -175,11 +175,11 @@ function addTerrain() {
     const WIDTH = 20
     const DEPTH = 50
 
-    const SCALE = 16
-    const geometry = new THREE.PlaneGeometry(WIDTH * SCALE, DEPTH * SCALE)
+    const SCALE = 4
+    const geometry = new THREE.PlaneGeometry(WIDTH, DEPTH)
 
     const texture = createChessboardTexture()
-    texture.repeat.set(WIDTH, DEPTH)  // 1 tile per unit
+    texture.repeat.set(WIDTH * SCALE, DEPTH * SCALE)  // 1 tile per unit
 
     const material = new THREE.MeshPhongMaterial({
         map: texture,
@@ -190,6 +190,11 @@ function addTerrain() {
     plane.rotateX(Math.PI / 2)
     plane.position.y = -0.5
     scene.add(plane)
+
+    plane.textureScale = SCALE
+    plane.width = WIDTH
+    plane.depth = DEPTH
+
     return plane
 }
 
@@ -293,7 +298,7 @@ function renderLoop(allTime) {
             axis.rotateY(wheelsAngularVelocity * dt)
         }
 
-        terrain.material.map.offset.y -= wheelsVelocity / 50
+        terrain.material.map.offset.y -= wheelsVelocity * dt * terrain.depth / terrain.textureScale
         
         renderer.render(scene, camera)
 
