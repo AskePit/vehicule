@@ -152,15 +152,42 @@ function addCar() {
     }
 }
 
+function createChessboardTexture(size = 256, squares = 2) {
+    const canvas = document.createElement('canvas')
+    canvas.width = size
+    canvas.height = size
+    const ctx = canvas.getContext('2d')
+
+    const squareSize = size / squares
+    for (let y = 0; y < squares; y++) {
+        for (let x = 0; x < squares; x++) {
+            ctx.fillStyle = (x + y) % 2 === 0 ? '#ffffff' : '#000000'
+            ctx.fillRect(x * squareSize, y * squareSize, squareSize, squareSize)
+        }
+    }
+
+    const texture = new THREE.CanvasTexture(canvas)
+    texture.wrapS = texture.wrapT = THREE.RepeatWrapping
+    return texture
+}
+
 function addTerrain() {
-    const geometry = new THREE.PlaneGeometry(20, 50)
-    const material = new THREE.MeshPhongMaterial({ 
-        color: 0x0000ff,
+    const WIDTH = 20
+    const DEPTH = 50
+
+    const SCALE = 16
+    const geometry = new THREE.PlaneGeometry(WIDTH * SCALE, DEPTH * SCALE)
+
+    const texture = createChessboardTexture()
+    texture.repeat.set(WIDTH, DEPTH)  // 1 tile per unit
+
+    const material = new THREE.MeshPhongMaterial({
+        map: texture,
         side: THREE.DoubleSide,
         shininess: 1,
     })
     const plane = new THREE.Mesh(geometry, material)
-    plane.rotateX(Math.PI/2)
+    plane.rotateX(Math.PI / 2)
     plane.position.y = -0.5
     scene.add(plane)
     return plane
@@ -255,15 +282,18 @@ function renderLoop(allTime) {
         camera.position.copy(currentPos)
         camera.quaternion.copy(currentQuat)
         
-        const wheelsVelocity = vehicle.getLeftDriveWheel().angularVelocity
+        const wheelsAngularVelocity = vehicle.getLeftDriveWheel().angularVelocity
+        const wheelsVelocity = vehicle.getLeftDriveWheel().getLinearVelocity()
 
         // Rotate wheels and axes
         for (let wheel of wheels) {
-            wheel.rotateY(wheelsVelocity * dt)
+            wheel.rotateY(wheelsAngularVelocity * dt)
         }
         for (let axis of axises) {
-            axis.rotateY(wheelsVelocity * dt)
+            axis.rotateY(wheelsAngularVelocity * dt)
         }
+
+        terrain.material.map.offset.y -= wheelsVelocity / 50
         
         renderer.render(scene, camera)
 
