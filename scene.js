@@ -94,7 +94,7 @@ function addWheel(position) { // -> Wheel
     return wheel
 }
 
-function addAxis(wheelL, wheelR, thickness = 0.05) { // -> Axis
+function addAxis(wheelL, wheelR, thickness = 0.04) { // -> Axis
     // Calculate distance between wheels for cylinder length
     const length = wheelR.position.x - wheelL.position.x
     
@@ -116,7 +116,7 @@ function addAxis(wheelL, wheelR, thickness = 0.05) { // -> Axis
     return axis
 }
 
-function addBase(axisFront, axisBack, width = 1.5, thickness = 0.1) {
+function addBase(axisFront, axisBack, width = 1.1, thickness = 0.1) {
     // Calculate dimensions based on axis positions
     const length = axisBack.position.z - axisFront.position.z
 

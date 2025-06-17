@@ -1,4 +1,4 @@
-import { rpmToAngularVelocity, angularVelocityToRpm, wheelMomentOfInertia, msTokmh, clamp } from './physics.js'
+import { rpmToAngularVelocity, angularVelocityToRpm, msTokmh, clamp } from './physics.js'
 
 export class Engine {
     maxTorque
@@ -8,6 +8,8 @@ export class Engine {
     currentRpm
     throttle // [0.0; 1.0] from no gas to floor pedal
     clutch   // [0.0; 1.0] from disengaged to fully engaged
+
+    inertia = 0.15 // kg·m²
 
     constructor(maxTorque, minRpm, maxRpm) {
         this.maxTorque = maxTorque
@@ -19,14 +21,17 @@ export class Engine {
     }
 
     #getTorqueFactor() {
-        const peakRpm = 2000  // Where max torque happens
-        let spread = 3000   // How wide the peak is
+        // asymmetric bell shape curve
+
+        const range = this.maxRpm - this.minRpm
+        const peakRpm = this.minRpm + range * 0.43
+        let spread = this.minRpm + range * 0.57
 
         if (this.currentRpm < peakRpm) {
-            spread /= 2.0
+            spread = spread * 2.0 / 3.0
         }
 
-        let factor = 1.0 - Math.pow((this.currentRpm - peakRpm) / spread, 2)
+        const factor = 1.0 - Math.pow((this.currentRpm - peakRpm) / spread, 2)
         return Math.max(0, factor)  // Ensure non-negative values
     }
 
@@ -43,10 +48,6 @@ export class Engine {
         const matchedVelocity = currentVelocity * (1 - this.clutch) + targetVelocity * this.clutch
 
         this.currentRpm = clamp(angularVelocityToRpm(matchedVelocity), this.minRpm, this.maxRpm)
-    }
-
-    update(dt) {
-
     }
 }
 
@@ -107,7 +108,7 @@ export class Differential {
 
 export class Wheel {
     radius
-    mass
+    carryMass
     airDragCoeff
     rollingResistanceCoeff
 
@@ -115,10 +116,10 @@ export class Wheel {
     maxAngularVelocity
     inTorque
 
-    constructor(radius, mass, airDragCoeff = 0.3, rollingResistanceCoeff = 30) {
+    constructor(radius, carryMass, airDragCoeff = 0.3, rollingResistanceCoeff = 30) {
         this.radius = radius
         this.angularVelocity = 0
-        this.mass = mass
+        this.carryMass = carryMass
         this.airDragCoeff = airDragCoeff
         this.rollingResistanceCoeff = rollingResistanceCoeff
     }
@@ -139,7 +140,12 @@ export class Wheel {
     }
 
     #applyTorque(dt) {
-        //const I = wheelMomentOfInertia(this.radius, this.mass)
+        const staticFrictionThreshold = 5  // Nm
+
+        if (Math.abs(this.angularVelocity) < 0.01 && Math.abs(this.inTorque) < staticFrictionThreshold) {
+            // Not enough torque to overcome static friction, wheel stays still
+            return
+        }
 
         const v = this.getLinearVelocity()
         const sign = Math.sign(v)
@@ -151,7 +157,7 @@ export class Wheel {
         const resistanceTorque = dragTorque + rollingTorque
         const netTorque = this.inTorque + resistanceTorque
         const driveForce = netTorque / this.radius
-        let acceleration = driveForce / 700 // Assuming a constant mass of 700 kg for the wheel
+        let acceleration = driveForce / this.carryMass
 
         // console.log(`inTorque: ${this.inTorque}\ndragTorque: ${dragTorque}\nrollingTorque: ${rollingTorque}\nnetTorque: ${netTorque}\ndriveForce: ${driveForce}\nacceleration: ${acceleration}`)
 
@@ -168,26 +174,21 @@ const LEFT = 0
 const RIGHT = 0
 
 export class Vehicle {
+    mass
     engine
     transmission
     differential
     driveWheels
     passiveWheels
 
-    mass
-    velocity  // m/s
-    dragCoefficient
-    rollingResistanceCoefficient
-
     constructor() {
+        this.mass = 1200  // kg
+
         this.engine = new Engine(340, 1000, 4500) // maxTorque, minRpm, maxRpm
         this.transmission = new Transmission()
         this.differential = new Differential()
-        this.driveWheels = [new Wheel(0.23, 25), new Wheel(0.23, 25)]
-        this.passiveWheels = [new Wheel(0.23, 25), new Wheel(0.23, 25)]
-
-        this.mass = 1200  // kg
-        //this.velocity = 0  // m/s
+        this.driveWheels = [new Wheel(0.23, this.mass / 2), new Wheel(0.23, this.mass / 2)]
+        this.passiveWheels = [new Wheel(0.23, 0), new Wheel(0.23, 0)]
     }
 
     update(dt) {
@@ -209,7 +210,6 @@ export class Vehicle {
         rightWheel.update(dt)
 
         const avgWheelAngularVelocity = (leftWheel.angularVelocity + rightWheel.angularVelocity) / 2
-        //this.velocity = avgWheelAngularVelocity * leftWheel.radius
 
         const diffAngularVelocity = avgWheelAngularVelocity
         const transmissionAngularVelocity = this.transmission.getAngularVelocity(diffAngularVelocity)
