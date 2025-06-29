@@ -3,13 +3,15 @@ import { clamp, remap } from './physics.js';
 export class Dial {
     SIZE = 180;
 
-    constructor(div, minValue = 0, maxValue = 200, minDegree = -135, maxDegree = 135, startValue = 0) {
+    constructor(div, minValue = 0, maxValue = 200, minDegree = -135, maxDegree = 135, startValue = 0, minorTickStep = 10, majorTickStep = 20) {
         this.#div = div
         this.#setupDiv();
         this.#minValue = minValue;
         this.#maxValue = maxValue;
         this.#minDegree = minDegree * Math.PI / 180;
         this.#maxDegree = maxDegree * Math.PI / 180;
+        this.#minorTickStep = minorTickStep;
+        this.#majorTickStep = majorTickStep;
 
         this.value = startValue
     }
@@ -57,7 +59,7 @@ export class Dial {
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        const numTicks = Math.floor((this.#maxValue - this.#minValue) / 10) + 1;
+        const numTicks = Math.floor((this.#maxValue - this.#minValue) / this.#minorTickStep) + 1;
         const minorTickLength = 6;
         const majorTickLength = 10;
         const minorTickWidth = 2;
@@ -65,12 +67,12 @@ export class Dial {
         ctx.save();
         ctx.translate(size / 2, size / 2);
         for (let i = 0; i < numTicks; i++) {
-            const value = this.#minValue + i * 10;
+            const value = this.#minValue + i * this.#minorTickStep;
             const angle = remap(value, this.#minValue, this.#maxValue, this.#minDegree, this.#maxDegree);
             ctx.save();
             ctx.rotate(angle);
             ctx.beginPath();
-            if (value % 20 === 0) {
+            if (value % this.#majorTickStep === 0) {
                 ctx.moveTo(0, -(size / 2 - 2));
                 ctx.lineTo(0, -(size / 2 - 2 - majorTickLength));
                 ctx.strokeStyle = "#fff";
@@ -134,6 +136,9 @@ export class Dial {
 
     #minValue = 0
     #maxValue = 200
+
+    #minorTickStep = 10
+    #majorTickStep = 20
 
     #value = 0
 }

@@ -16,8 +16,9 @@ const rWheelLinVelocityEl = document.getElementById("r-wheel-lin-velocity-val")
 const vehicleSpeedEl = document.getElementById("vehicle-speed-val")
 
 const speedometerEl = document.getElementById("speedometer")
-const speedometer = new Dial(speedometerEl, 0, 220, -130, 130, 0)
-speedometer.render()
+const odometerEl = document.getElementById("odometer")
+const speedometer = new Dial(speedometerEl, 0, 220, -130, 130, 0, 10, 20)
+const odometer = new Dial(odometerEl, 0, 4500, -130, 130, 0, 500, 1000)
 
 throttleEl.value = vehicle.engine.throttle
 clutchEl.value = vehicle.engine.clutch
@@ -317,7 +318,9 @@ function renderLoop(allTime) {
         rWheelLinVelocityEl.innerHTML = vehicle.getRightDriveWheel().getLinearVelocity().toFixed(1)
         vehicleSpeedEl.innerHTML = vehicle.getKmh().toFixed(0)
         speedometer.value = vehicle.getKmh()
+        odometer.value = vehicle.engine.currentRpm
         speedometer.render()
+        odometer.render()
     }
 }
 renderer.setAnimationLoop(renderLoop)

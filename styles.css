@@ -13,9 +13,13 @@
 #speedometer {
     position: absolute;
     top: 260px;
-    left: 10px;
-    width: 200px;
-    height: 200px;
+    left: 240px;
+}
+
+#odometer {
+    position: absolute;
+    top: 260px;
+    left: 20px;
 }
 
 .controls {
