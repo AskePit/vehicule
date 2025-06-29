@@ -10,6 +10,14 @@
     font-size: 11px;
 }
 
+#speedometer {
+    position: absolute;
+    top: 260px;
+    left: 10px;
+    width: 200px;
+    height: 200px;
+}
+
 .controls {
     top: 10px;
 }

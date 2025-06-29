@@ -17,3 +17,7 @@ export function msTokmh(ms) {
 export function clamp(value, min, max) {
     return Math.max(min, Math.min(value, max));
 }
+
+export function remap(x, inMin, inMax, outMin, outMax) {
+    return (x - inMin) * (outMax - outMin) / (inMax - inMin) + outMin
+}

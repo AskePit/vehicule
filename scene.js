@@ -1,4 +1,5 @@
 import { vehicle } from './simulation.js'
+import { Dial } from './dial.js'
 
 const engineRpmEl = document.getElementById("engine-rpm-val")
 const engineTorqueEl = document.getElementById("engine-torque-val")
@@ -13,6 +14,10 @@ const rWheelAngVelocityEl = document.getElementById("r-wheel-ang-velocity-val")
 const lWheelLinVelocityEl = document.getElementById("l-wheel-lin-velocity-val")
 const rWheelLinVelocityEl = document.getElementById("r-wheel-lin-velocity-val")
 const vehicleSpeedEl = document.getElementById("vehicle-speed-val")
+
+const speedometerEl = document.getElementById("speedometer")
+const speedometer = new Dial(speedometerEl, 0, 220, -130, 130, 0)
+speedometer.render()
 
 throttleEl.value = vehicle.engine.throttle
 clutchEl.value = vehicle.engine.clutch
@@ -204,7 +209,6 @@ const car = addCar()
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
 scene.add(ambientLight)
 
-let time = 0
 const INTERPOLATION_TIMES = {
     'RIGHT_SIDE_TO_RIGHT_DIAGONAL': 3,
     'RIGHT_DIAGONAL_TO_TOP_BACK': 4.5,
@@ -312,6 +316,8 @@ function renderLoop(allTime) {
         lWheelLinVelocityEl.innerHTML = vehicle.getLeftDriveWheel().getLinearVelocity().toFixed(1)
         rWheelLinVelocityEl.innerHTML = vehicle.getRightDriveWheel().getLinearVelocity().toFixed(1)
         vehicleSpeedEl.innerHTML = vehicle.getKmh().toFixed(0)
+        speedometer.value = vehicle.getKmh()
+        speedometer.render()
     }
 }
 renderer.setAnimationLoop(renderLoop)
